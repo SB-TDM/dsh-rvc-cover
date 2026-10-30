@@ -1,0 +1,87 @@
+# dsh-rvc-cover
+
+面向 Windows 的 DSH 插件：用本机已有的 RVC 模型翻唱，并让说话走同一个模型。
+
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D4)](https://github.com/SB-TDM/dsh-rvc-cover)
+[![License](https://img.shields.io/github/license/SB-TDM/dsh-rvc-cover)](LICENSE)
+
+它不自带引擎，也不自带音色。插件注册一个 `rvc-cover` 技能，把分离、试听、换嗓、说话和混音的顺序、参数和失败判据交给 agent；真正出声靠本机的 Applio 或 RVC、ffmpeg，以及你自己的 `.pth`。
+
+> 还没有在目标机器上跑通整首歌。脚本接口和 dry-run 核对过，安装、显卡推理和听感验收都还没做。不要把它当成已经能交付成品的工具。
+
+## 核心特色：同一个模型，先听 10 秒
+
+选好 Applio 目录和一份推理用的 `.pth` 之后，按这个顺序走，不要一上来转完整首歌：
+
+1. **先体检**：确认目录是 Applio 还是 RVC 2.3、解释器、ffmpeg 和模型在不在。
+2. **先听 10 秒**：第一次变调用 0。基频脚本只给两个片段的音高差，不直接当最佳调。
+3. **再换嗓**：Applio 走 `core.py infer`。RVC 2.3 没有这条命令行，只能开 WebUI。
+4. **用同一份模型说话**：Edge TTS 先合成，再交给同一个 `.pth`。这一步要联网，而且不能代替试听。
+5. **最后混音**：伴奏跟着移调，编码后回读响度。人声加的 2 dB 只是轨增益，不是测出来的相对伴奏电平。
+
+> 文件生成了不算完成。说话、低音和高音要放在一起听，像不像同一个人只能用人耳判断。
+
+## 功能
+
+- **技能，不是一层会失败的按钮**：引擎没装时不包 Host 工具，避免一调用就报错。
+- **两种引擎布局**：根目录有 `core.py` 认作 Applio，有 `webui.py` 认作 RVC 2.3。
+- **换嗓脚本**：`convert.ps1` 传当前 Applio 的 `--volume-envelope`；没有 `.index` 时仍传空的 `--index-path`，并把检索强度降到 0。
+- **说话脚本**：`speak.ps1` 走官方的 TTS 再 RVC 路径。默认源语音是 `zh-CN-XiaoxiaoNeural`，目标音色来自你的模型。
+- **混音脚本**：`mix.ps1` 优先用 rubberband 移调伴奏，没有就退回 ffmpeg。传入 `-Source` 才和原曲比时长。
+- **参数说明**：`assets/references/parameters.md` 写每个起点值是什么意思，以及哪些只是试听起点。
+
+## 安装
+
+在 DSH 里用 `plugin_manager`，`action` 用 `install_bundle`，`target` 指向本仓库的绝对路径。
+
+装上之后应能在插件列表里看到「RVC 翻唱」，并调用技能 `rvc-cover`。这一步还没有在本机验证。
+
+## 使用前要有
+
+| 项 | 要求 |
+|---|---|
+| 引擎 | Applio，或 RVC 2.3 的 WebUI |
+| 模型 | 推理用 `.pth`。训练中间权重不能拿来顶替 |
+| 可选 | 与模型匹配的 `.index` 和训练时用的 embedder |
+| 工具 | `ffmpeg`、`ffprobe`；定调脚本另需 `librosa` |
+| 显卡 | NVIDIA。6GB 可以分阶段跑，不能据此保证任意模型都不超显存 |
+
+环境变量：
+
+| 变量 | 含义 |
+|---|---|
+| `DSH_RVC_HOME` | Applio 或 RVC 的根目录 |
+| `DSH_RVC_MODEL` | 模型文件名，不带 `.pth` |
+
+没设置 `DSH_RVC_HOME` 时先问路径，不要猜，也不要自己 `pip install`。
+
+## 脚本
+
+在仓库里这样体检：
+
+```powershell
+pwsh -File assets/scripts/preflight.ps1 -Root $env:DSH_RVC_HOME -ModelName $env:DSH_RVC_MODEL
+```
+
+换嗓、说话和混音分别是：
+
+```powershell
+pwsh -File assets/scripts/convert.ps1 -InputPath vocals.wav -Out vocals_conv.wav -Model models\target.pth -Pitch 0
+pwsh -File assets/scripts/speak.ps1 -Text "今天晚上见。" -Out speech.wav -Model models\target.pth
+pwsh -File assets/scripts/mix.ps1 -Vocal vocals_conv.wav -Instrumental instrumental.wav -Source source.mp3 -ShiftSemitones 0 -Out cover.mp3
+```
+
+三条命令都假设当前目录能找到引擎、模型和音频。`convert.ps1` 与 `speak.ps1` 也可以用 `-ApplioRoot` 指定引擎。加 `-DryRun` 只打印命令。
+
+## 技术栈
+
+- DSH bundle：`cordis.patch.yml` 注册插件，`lib/index.js` 注册技能
+- PowerShell 7 脚本与一个 Python 定调脚本
+- Applio `core.py` 的 `infer` / `tts`，或 RVC WebUI
+- ffmpeg 做移调、混音和响度回读
+
+## 许可证
+
+MIT，详见 [LICENSE](LICENSE)。
+
+本仓库不包含 RVC、Applio、Demucs、GPT-SoVITS 或任何音色权重。它们的许可证以各自项目为准。用真人声音翻唱时，公开分发前需要自行处理声音权和词曲授权。

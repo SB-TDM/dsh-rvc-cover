@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "RVC Cover",
+    "description": "Turn a song into a cover in a target timbre with a local RVC model, keeping speaking and singing on the same voice."
+  }
+}
