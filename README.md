@@ -47,13 +47,25 @@ dsh plugin --profile web add github:SB-TDM/dsh-rvc-cover
 
 ## 使用前要有
 
-| 项 | 要求 |
-|---|---|
-| 引擎 | Applio，或 RVC 2.3 的 WebUI |
-| 模型 | 推理用 `.pth`。训练中间权重不能拿来顶替 |
-| 可选 | 与模型匹配的 `.index` 和训练时用的 embedder |
-| 工具 | `ffmpeg`、`ffprobe`；定调脚本另需 `librosa` |
-| 显卡 | NVIDIA。6GB 可以分阶段跑，不能据此保证任意模型都不超显存 |
+插件不带引擎、模型和 ffmpeg。下面都要自己装。脚本认的是根目录有 `core.py` 的 Applio，只装 Applio Desktop 安装包过不了体检。
+
+| 依赖 | 干什么 | 在哪下 |
+|---|---|---|
+| 本插件 | 技能和脚本 | https://github.com/SB-TDM/dsh-rvc-cover |
+| DeepSeek Harness 命令行 | 执行 `dsh plugin` | https://www.npmjs.com/package/@deepseek-ai/dsh ，需要 Node.js。桌面客户端是另一条渠道：https://deepseekharness.online/download.html |
+| PowerShell 7 | 跑 `.ps1` | https://github.com/PowerShell/PowerShell/releases |
+| Applio 源码或 Windows 编译包 | 换音色、说话 | 源码 https://github.com/IAHispano/Applio ，进目录运行 `run-install.bat`。编译包 https://huggingface.co/IAHispano/Applio/tree/main/Compiled/Windows |
+| 推理 `.pth` | 目标音色 | https://applio.org/search 。放到 `models\名字.pth`，有同名 `.index` 就放一起。不要用 `G_*.pth` |
+| ffmpeg、ffprobe | 读音频、移调、混音 | https://ffmpeg.org/download.html ，Windows 选 gyan.dev 的 release essentials，把 `bin` 加进 PATH |
+| NVIDIA 驱动 | 体检和推理 | https://www.nvidia.com/Download/index.aspx |
+
+说话要能联网，Edge TTS 在 Applio 里，不用另装。定调脚本在 Applio 的 Python 里装两个包：
+
+```powershell
+& "$env:DSH_RVC_HOME\env\Scripts\python.exe" -m pip install librosa soundfile
+```
+
+不用 Applio、改用 RVC 2.3 时，仓库在 https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI ，需要 Python 3.12。它没有命令行推理，本插件的 `convert.ps1` 用不上。
 
 环境变量：
 
