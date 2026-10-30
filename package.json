@@ -1,8 +1,7 @@
 {
-  "name": "@local/dsh-rvc-cover",
+  "name": "dsh-rvc-cover",
   "version": "0.1.0",
-  "private": true,
-  "description": "Turn a song into a cover in a target timbre with a local RVC model, and keep speaking and singing on the same voice.",
+  "description": "用本机 RVC 模型翻唱，并让说话走同一个模型。",
   "keywords": [
     "dsh",
     "dsh-plugin",

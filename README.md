@@ -30,11 +30,20 @@
 - **混音脚本**：`mix.ps1` 优先用 rubberband 移调伴奏，没有就退回 ffmpeg。传入 `-Source` 才和原曲比时长。
 - **参数说明**：`assets/references/parameters.md` 写每个起点值是什么意思，以及哪些只是试听起点。
 
+## 它挂在哪里
+
+这是一个 bundle，不是 profile。`package.json` 的 `dsh.bundle.patch` 指向 `cordis.patch.yml`，补丁把插件插进行列；`lib/index.js` 只在 `ctx.skills` 上注册技能 `rvc-cover`。不注册工具、命令或模型适配器。卸载时 Cordis 会撤销这次注册。
+
 ## 安装
 
-在 DSH 里用 `plugin_manager`，`action` 用 `install_bundle`，`target` 指向本仓库的绝对路径。
+在要使用的 profile 里安装。本地目录和 GitHub 都可以：
 
-装上之后应能在插件列表里看到「RVC 翻唱」，并调用技能 `rvc-cover`。这一步还没有在本机验证。
+```powershell
+dsh plugin --profile web add C:\path\to\dsh-rvc-cover
+dsh plugin --profile web add github:SB-TDM/dsh-rvc-cover
+```
+
+装完后重启该 profile。插件列表里应显示「RVC 翻唱」。这一步还没有在本机验证。仓库已加 `dsh-plugin` 话题，方便在插件列表里被找到。
 
 ## 使用前要有
 
